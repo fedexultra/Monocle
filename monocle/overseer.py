@@ -20,7 +20,7 @@ try:
 except ImportError:
     import _dummy_thread as _thread
 
-from .db import SIGHTING_CACHE, FORT_CACHE
+from .db import SIGHTING_CACHE, MYSTERY_CACHE, FORT_CACHE
 from .utils import get_current_hour, dump_pickle, get_start_coords, get_bootstrap_points
 
 from . import config
@@ -97,7 +97,6 @@ class Overseer:
     def check(self):
         now = time.monotonic()
         last_commit = now
-        last_cleaned_cache = now
         last_things_found_updated = now
         last_swap = now
         last_stats_updated = 0
@@ -105,10 +104,6 @@ class Overseer:
         while not self.killed:
             try:
                 now = time.monotonic()
-                # Clean cache
-                if now - last_cleaned_cache > 900:  # clean cache after 15min
-                    shared.DB.clean_cache()
-                    last_cleaned_cache = now
                 if now - last_commit > 5:
                     shared.DB.commit()
                     last_commit = now
@@ -270,6 +265,10 @@ class Overseer:
                 self.count,
                 active_count(),
                 self.coroutines_count),
+            'DB queue: {}, sightings cache: {}, mystery cache: {}'.format(
+                shared.DB.queue.qsize(),
+                len(SIGHTING_CACHE.store),
+                len(MYSTERY_CACHE.store)),
             '',
             'Seen per worker: min {min}, max {max}, med {med:.0f}'.format(
                 **self.seen_stats),
@@ -620,6 +619,8 @@ class Overseer:
         for worker in self.workers:
             worker.kill()
 
+        SIGHTING_CACHE.running = False
+        MYSTERY_CACHE.running = False
         FORT_CACHE.pickle()
 
         while not self.extra_queue.empty():

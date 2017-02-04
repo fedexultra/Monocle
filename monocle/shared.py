@@ -137,7 +137,6 @@ class DatabaseProcessor(Thread):
         self.queue = Queue()
         self.logger = getLogger('dbprocessor')
         self.running = True
-        self._clean_cache = False
         self.count = 0
         self._commit = False
 
@@ -151,18 +150,6 @@ class DatabaseProcessor(Thread):
         session = db.Session()
 
         while self.running or not self.queue.empty():
-            if self._clean_cache:
-                try:
-                    db.SIGHTING_CACHE.clean_expired()
-                except Exception:
-                    self.logger.exception('Failed to clean sightings cache.')
-                else:
-                    self._clean_cache = False
-                try:
-                    db.MYSTERY_CACHE.clean_expired(session)
-                except Exception:
-                    session.rollback()
-                    self.logger.exception('Failed to clean mystery cache.')
             try:
                 item = self.queue.get()
 
@@ -178,6 +165,8 @@ class DatabaseProcessor(Thread):
                     db.add_fort_sighting(session, item)
                 elif item['type'] == 'pokestop':
                     db.add_pokestop(session, item)
+                elif item['type'] == 'mystery-update':
+                    db.update_mystery(session, item)
                 elif item['type'] == 'kill':
                     break
                 self.logger.debug('Item saved to db')
@@ -191,12 +180,7 @@ class DatabaseProcessor(Thread):
                 session.rollback()
                 self.logger.exception('A wild exception appeared!')
 
-        try:
-            db.MYSTERY_CACHE.clean_expired(session)
-            session.commit()
-        except DBAPIError:
-            session.rollback()
-            self.logger.exception('A wild DB exception appeared!')
+        db.MYSTERY_CACHE.update_db(session)
         session.close()
 
     def clean_cache(self):
