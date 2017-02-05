@@ -5,14 +5,6 @@ try:
 except ImportError as e:
     raise ImportError('Please copy config.example.py to config.py and customize it.') from e
 
-import asyncio
-try:
-    if not hasattr(config, 'UVLOOP') or config.UVLOOP:
-        from uvloop import EventLoopPolicy
-        asyncio.set_event_loop_policy(EventLoopPolicy())
-except ImportError:
-    pass
-
 from multiprocessing.managers import BaseManager, DictProxy
 from queue import Queue, Full
 from argparse import ArgumentParser
@@ -25,6 +17,7 @@ from sys import platform
 from sqlalchemy.exc import DBAPIError
 
 import time
+import asyncio
 
 # Check whether config has all necessary attributes
 _required = (

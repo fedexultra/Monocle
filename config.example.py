@@ -182,9 +182,6 @@ LAST_MIGRATION = 1481932800  # Dec. 17th, 2016
 # Only for use with web-sanic (requires PostgreSQL)
 #DB = {'host': '127.0.0.1', 'user': 'monocle_role', 'password': 'pik4chu', 'port': '5432', 'database': 'monocle'}
 
-# Disable to use Python's event loop even if uvloop is installed
-#UVLOOP = True
-
 ### OPTIONS BELOW THIS POINT ARE ONLY NECESSARY FOR NOTIFICATIONS ###
 NOTIFY = False  # enable notifications
 
